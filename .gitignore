@@ -31,3 +31,21 @@ node_modules
 
 # Optional REPL history
 .node_repl_history
+
+data/nspl.csv
+
+data/postcodeRawFiles/ONSPD_MAY_2016_UK.csv
+
+data/postcodeRawFiles/regions.csv
+
+data/postcodeRawFiles/postcodesNI.csv
+
+data/postcodeRawFiles/postcodesMin4.csv
+
+data/postcodeRawFiles/postcodesMin3.csv
+
+data/postcodeRawFiles/postcodesMin2.csv
+
+data/postcodeRawFiles/postcodesMin.csv
+
+data/postcodeRawFiles/postcodeMin2.csv
