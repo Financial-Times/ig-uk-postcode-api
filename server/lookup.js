@@ -10,7 +10,7 @@ const notFoundCache = lruCache({
 });
 
 const lookup = async (areaType, outcode, incode) => {
-  // special case
+  // special case for gibraltar
   if (areaType === 'council-area' && /^GX/.test(outcode)) {
     return 'G99999999';
   }
@@ -19,17 +19,20 @@ const lookup = async (areaType, outcode, incode) => {
 
   if (notFoundCache.has(cacheKey)) return null;
 
-  if (cache.has(cacheKey)) {
-    return cache.get(cacheKey);
-  }
+  if (cache.has(cacheKey)) return cache.get(cacheKey);
 
   return new Promise((resolve, reject) => {
-    const stream = fs.createReadStream(`data/${areaType}/${outcode}.csv`);
-
-    stream.pipe(csv())
+    fs.createReadStream(`data/${areaType}/${outcode}.csv`)
+      .pipe(csv())
       .on('data', (data) => {
-        cache.set(outcode + ' ' + data.pc, data.ca);
-      });
+        cache.set(cacheKey, data.value);
+        if (incode === data.incode) resolve(data.value);
+      })
+      .on('error', reject)
+      .on('end', () => {
+        resolve(null);
+      })
+    ;
   });
 };
 
