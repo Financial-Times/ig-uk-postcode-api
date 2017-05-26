@@ -1,135 +1,91 @@
 const http = require('http');
-const fs = require('fs');
-const url = require('url');
-const csv = require('csv-parser');
-const LRU = require('./lru-cache');
+const { URL } = require('url');
+const lookup = require('./lookup');
 
 const PORT = process.env.PORT || '9999';
 
-const cache = LRU(1.5e6);
+const areaTypes = new Set([
+  'council-area',
+  'westminster-parliamentary-constituency',
+]);
 
-const error_cache = LRU({
-  max: 10000,
-  maxAge: 60
-});
 
-const match_postcode = /[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}/g;
+const sendError = (res, status, message) => {
+  res.statusCode = status;
+  res.end(JSON.stringify({
+    error: true,
+    status,
+    message,
+  }));
+};
 
-// TODO: uncaught exception handler
+const sendAnswer = (res, answer) => {
+  res.end(JSON.stringify({
+    status: 200,
+    answer,
+  }));
+};
 
-function postcode_to_gss_code(postcode, cb) {
+const parsePostcode = (_postcode) => {
+  const postcode = _postcode.replace(/\s+/g, '').toUpperCase();
+  return [postcode.slice(0, -3), postcode.slice(-3)];
+};
 
-  postcode = postcode.toUpperCase();
+const handler = async (req, res) => {
+  const url = new URL(req.url);
 
-  if (postcode.indexOf(' ') === -1) {
-    const oc = postcode.length - 3;
-    postcode = postcode.substr(0, oc) + ' ' + postcode.substr(oc);
-  }
-
-  if (error_cache.has(postcode)) {
-    cb(null, '');
+  if (url.pathname === '/__gtg') {
+    res.end('ok');
     return;
   }
 
-  // Northern Ireland
-  if (postcode.startsWith('BT')) {
-    cb(null, 'N92000002');
+  if (url.pathname === '/favicon.ico') {
+    sendError(res, 404, 'Not found');
     return;
   }
 
-  // Gibralter
-  if (postcode.startsWith('GX')) {
-    cb(null, 'G99999999');
+  if (areaTypes.has(url.pathname)) {
+    sendError(res, 404, `Not found: "${url.pathname}"`);
+  }
+
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cache-Control', 'max-age=31536000, immutable');
+  res.setHeader('Content-Type', 'application/json');
+
+  // read the postcode from the query string
+  const postcode = url.searchParams.postcode;
+
+  // check it looks ok in principle
+  if (!postcode) {
+    sendError(res, 400, 'Missing "postcode" parameter');
+    return;
+  }
+  if (postcode.length < 4) {
+    sendError(res, 400, '"postcode" parameter too short');
     return;
   }
 
-  // Return the LA code if already cached
-  if (cache.has(postcode)) {
-    cb(null, cache.get(postcode));
+  // parse it
+  const [outcode, incode] = parsePostcode(postcode);
+
+  // look up the answer
+  let answer;
+  try {
+    answer = await lookup(url.pathname, outcode, incode);
+  } catch (error) {
+    sendError(res, 500, 'Internal error');
+  }
+
+  if (answer) {
+    sendAnswer(res, answer);
     return;
   }
 
-  let sent = false;
+  sendError(res, 404, `Information for postcode "${outcode} ${incode}" not found`);
+};
 
-  function send_error(e) {
-    if (sent) return;
-    error_cache.set(postcode, true);
-    if (e instanceof Error) {
-      cb(e.code === 'ENOENT' ? null : e, '');
-    } else {
-      cb(null, '');
-    }
-  }
-
-  const [outcode, incode] = postcode.split(' ');
-  const stream = fs.createReadStream(`data/outcodes/${outcode}.csv`);
-
-  stream.on('error', send_error);
-  stream.pipe(csv())
-        .on('data', data => {
-          cache.set(outcode + ' ' + data.pc, data.ca);
-          if (data.pc === incode) {
-            cb(null, data.ca);
-            sent = true;
-          }
-        })
-        .on('end', send_error)
-        .on('error', send_error);
-
-}
-
-function handleRequest(request, response){
-
-    if (request.url === '/__gtg') {
-      response.statusCode = 200;
-      response.end('ok');
-      return;
-    }
-
-    if (request.url === '/favicon.ico') {
-      response.statusCode = 404;
-      response.end('');
-      return;
-    }
-
-    response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Cache-Control', 'max-age=31536000');
-    response.setHeader('Content-Type', 'text/plain');
-
-    const url_params = url.parse(request.url, true);
-    const q = url_params.query.q;
-
-    if (!q) {
-      response.statusCode = 400;
-      response.end('q parameter required');
-      return;
-    }
-
-    const postcode = (q.toUpperCase().match(match_postcode) || [])[0];
-
-    if (!postcode) {
-      response.statusCode = 400;
-      response.end('a valid postcode is required');
-      return;
-    }
-
-    postcode_to_gss_code(postcode, (err, gss_code) => {
-      if (err) {
-        console.error(err.stack);
-        response.statusCode = 500;
-        response.end(err.message);
-      } else if (!gss_code) {
-        response.statusCode = 404;
-        response.end('not found');
-      } else {
-        response.statusCode = 200;
-        response.end(gss_code);
-      }
-    });
-}
-
-const server = http.createServer(handleRequest);
+const server = http.createServer(handler);
 
 server.listen(PORT, function(){
-    console.log("Server listening on: http://localhost:%s", PORT);
+  console.log('Server listening on: http://localhost:%s', PORT);
 });

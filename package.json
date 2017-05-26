@@ -1,13 +1,22 @@
 {
   "dependencies": {
-    "csv-parser": "^1.9.3"
+    "csv-parser": "^1.9.3",
+    "glob-promise": "^3.1.0",
+    "graceful-fs": "^4.1.11",
+    "lru-cache": "^4.0.2"
   },
   "engines": {
     "node": ">=7.10"
   },
   "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server"
+  },
+  "devDependencies": {
+    "eslint": "^3.19.0",
+    "eslint-config-airbnb": "^15.0.1",
+    "eslint-plugin-import": "^2.2.0",
+    "eslint-plugin-jsx-a11y": "^5.0.1",
+    "eslint-plugin-react": "^7.0.1"
   }
 }
