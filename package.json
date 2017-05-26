@@ -1,0 +1,24 @@
+{
+  "dependencies": {
+    "@financial-times/n-logger": "^5.5.4",
+    "csv-parser": "^1.9.3",
+    "glob-promise": "^3.1.0",
+    "graceful-fs": "^4.1.11",
+    "lru-cache": "^4.0.2"
+  },
+  "devDependencies": {
+    "eslint": "^3.19.0",
+    "eslint-config-airbnb": "^15.0.1",
+    "eslint-plugin-import": "^2.2.0",
+    "eslint-plugin-jsx-a11y": "^5.0.1",
+    "eslint-plugin-react": "^7.0.1"
+  },
+  "engines": {
+    "node": ">=7.10",
+    "yarn": ">=0.24.5"
+  },
+  "private": true,
+  "scripts": {
+    "start": "node server"
+  }
+}
