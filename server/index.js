@@ -16,12 +16,12 @@ const areaTypes = fs.readdirSync(path.resolve(__dirname, '..', 'data'))
 const docPageHTML = fs.readFileSync(path.join(__dirname, 'docs.html'), 'utf8')
   .replace('$AREA_TYPES', areaTypes.join(', '))
   .replace('$EXAMPLES', areaTypes.map(name => {
-    const pathname = `/v1/${name}?postcode=se1+9hl`;
+    const pathname = `/__postcode-api/v1/${name}?postcode=se1+9hl`;
     return `<li><a href="${pathname}"><code>${pathname}</code></a></li>`
   }).join(''));
 
 // regex for matching API requests
-const apiPathMatch = new RegExp(`^/v1/(${areaTypes.join('|')})$`);
+const apiPathMatch = new RegExp(`^/__postcode-api/v1/(${areaTypes.join('|')})$`);
 
 // helper for normalizing and parsing a postcode into "outcode" and "incode"
 const parsePostcode = (_postcode) => {
@@ -38,12 +38,12 @@ const handler = async (req, res) => {
       res.end('ok');
       return;
 
-    case '/':
-      res.writeHead(302, { Location: '/v1' });
+    case '/__postcode-api':
+      res.writeHead(302, { Location: '/__postcode-api/v1' });
       res.end();
       return;
 
-    case '/v1':
+    case '/__postcode-api/v1':
       res.end(docPageHTML);
       return;
 
