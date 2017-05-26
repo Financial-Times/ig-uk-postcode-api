@@ -38,6 +38,7 @@ const handler = async (req, res) => {
       res.end('ok');
       return;
 
+    case '/':
     case '/__postcode-api':
       res.writeHead(302, { Location: '/__postcode-api/v1' });
       res.end();
