@@ -1,4 +1,9 @@
-# EU referendum place search
+# ig-postcode-search
+
+- Live Heroku app: http://ft-ig-postcode-search.herokuapp.com/
+- Auto-deploys from master
+- [Heroku dashboard](https://dashboard.heroku.com/apps/ft-ig-postcode-search)
+
 
 ## Run locally
 
