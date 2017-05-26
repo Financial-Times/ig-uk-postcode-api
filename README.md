@@ -1,8 +1,8 @@
 # UK Postcode API
 
-See the [live app](http://ft-ig-postcode-search.herokuapp.com/) for documentation.
+See the [live app](https://ft-ig-uk-postcode-api.herokuapp.com/) for documentation.
 
-Auto-deploys from master via [Heroku pipeline](https://dashboard.heroku.com/pipelines/d6dbe5f8-650d-4415-8b67-ab600d6831d8).
+Auto-deploys from master via [Heroku pipeline](https://dashboard.heroku.com/pipelines/9391551c-3631-4cc3-a261-51e8f6ead362).
 
 ## Licence
 
