@@ -1,7 +1,8 @@
+const path = require('path');
 const http = require('http');
 const url = require('url');
 const fs = require('graceful-fs');
-const path = require('path');
+const logger = require('@financial-times/n-logger').default;
 const lookup = require('./lookup');
 
 // look for data directories to establish what area types there are
@@ -19,33 +20,22 @@ const docPageHTML = fs.readFileSync(path.join(__dirname, '..', 'help.html'), 'ut
     return `<li><a href="${pathname}"><code>${pathname}</code></a></li>`
   }).join(''));
 
-const matchPath = new RegExp(`^/v1/(${areaTypes.join('|')})$`);
+// regex for matching API requests
+const apiPathMatch = new RegExp(`^/v1/(${areaTypes.join('|')})$`);
 
+// helper for normalizing and parsing a postcode into "outcode" and "incode"
 const parsePostcode = (_postcode) => {
   const postcode = _postcode.replace(/\s+/g, '').toUpperCase();
   return [postcode.slice(0, -3), postcode.slice(-3)];
 };
 
+// http request handler
 const handler = async (req, res) => {
   const { pathname, query } = url.parse(req.url, true);
-
-  // helper for sending a JSON response
-  const send = (status, message) => {
-    res.statusCode = status;
-    res.end(JSON.stringify({
-      status,
-      message,
-    }));
-  };
 
   switch (pathname) {
     case '/__gtg':
       res.end('ok');
-      return;
-
-    case '/favicon.ico':
-      res.statusCode = 404;
-      res.end('Not found');
       return;
 
     case '/':
@@ -58,11 +48,19 @@ const handler = async (req, res) => {
       return;
 
     default: {
-      const matched = matchPath.exec(pathname);
+      const matched = apiPathMatch.exec(pathname);
+      if (!matched) {
+        res.statusCode = 404;
+        res.end('Not found');
+        return;
+      }
 
-      if (!matched) send(404, `Not found: "${pathname}"`);
+      // helper for sending an JSON response
+      const sendResponse = (status, data) => {
+        res.statusCode = status;
+        res.end(JSON.stringify(Object.assign({ status }, data)));
+      };
 
-      // treating this as an API request
       const areaType = matched[1];
 
       res.setHeader('Access-Control-Allow-Origin', '*');
@@ -73,12 +71,12 @@ const handler = async (req, res) => {
       const postcode = query.postcode;
 
       if (!postcode) {
-        send(400, 'Missing "postcode" parameter');
+        sendResponse(400, { message: 'Missing "postcode" parameter' });
         return;
       }
 
       if (postcode.length < 4) {
-        send(400, '"postcode" parameter too short');
+        sendResponse(400, { message: '"postcode" parameter too short' });
         return;
       }
 
@@ -86,25 +84,26 @@ const handler = async (req, res) => {
       // second bits of a UK postcode are called)
       const [outcode, incode] = parsePostcode(postcode);
 
-      // try to find an answer
+      // try to look it up
       let value;
       try {
         value = await lookup(areaType, outcode, incode);
       } catch (error) {
-        send(500, 'Internal error');
+        logger.error('Unexpected error during postcode lookup', error);
+        sendResponse(500, { message: 'Internal server error' });
       }
 
       if (value) {
-        res.end(JSON.stringify({
-          status: 200,
-          type: areaType,
+        sendResponse(200, {
           value,
           postcode: `${outcode} ${incode}`,
-        }));
+          type: areaType,
+        });
+
         return;
       }
 
-      send(400, `Postcode not known: ${outcode} ${incode}`);
+      sendResponse(400, { message: `Postcode not known: ${outcode} ${incode}` });
     }
   }
 };
@@ -114,5 +113,5 @@ const server = http.createServer(handler);
 const port = process.env.PORT || '9999';
 
 server.listen(port, () => {
-  console.log(`Server listening on: http://localhost:${port}/`);
+  logger.info(`Listening on port ${port}/`);
 });

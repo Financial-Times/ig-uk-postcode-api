@@ -1,3 +1,4 @@
+const path = require('path');
 const fs = require('graceful-fs');
 const csv = require('csv-parser');
 const lruCache = require('lru-cache');
@@ -8,6 +9,8 @@ const notFoundCache = lruCache({
   max: 10000,
   maxAge: 60
 });
+
+const dataDir = path.resolve(__dirname, '..', 'data');
 
 const lookup = async (areaType, outcode, incode) => {
   // special case for gibraltar
@@ -22,8 +25,15 @@ const lookup = async (areaType, outcode, incode) => {
   if (cache.has(cacheKey)) return cache.get(cacheKey);
 
   return new Promise((resolve, reject) => {
-    fs.createReadStream(`data/${areaType}/${outcode}.csv`)
-      .pipe(csv())
+    const stream = fs.createReadStream(path.join(dataDir, areaType, `${outcode}.csv`))
+      .on('error', (error) => {
+        if (error.code === 'ENOENT') {
+          notFoundCache.set(cacheKey, true);
+          resolve(null);
+        }
+      });
+
+    stream.pipe(csv())
       .on('data', (data) => {
         cache.set(cacheKey, data.value);
         if (incode === data.incode) resolve(data.value);
