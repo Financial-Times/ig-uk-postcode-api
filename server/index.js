@@ -16,12 +16,12 @@ const areaTypes = fs.readdirSync(path.resolve(__dirname, '..', 'data'))
 const docPageHTML = fs.readFileSync(path.join(__dirname, 'docs.html'), 'utf8')
   .replace('$AREA_TYPES', areaTypes.join(', '))
   .replace('$EXAMPLES', areaTypes.map(name => {
-    const pathname = `/__postcode-api/v1/${name}?postcode=se1+9hl`;
+    const pathname = `/__graphics/postcode-api/v1/${name}?postcode=se1+9hl`;
     return `<li><a href="${pathname}"><code>${pathname}</code></a></li>`
   }).join(''));
 
 // regex for matching API requests
-const apiPathMatch = new RegExp(`^/__postcode-api/v1/(${areaTypes.join('|')})$`);
+const apiPathMatch = new RegExp(`^/__graphics/postcode-api/v1/(${areaTypes.join('|')})$`);
 
 // helper for normalizing and parsing a postcode into "outcode" and "incode"
 const parsePostcode = (_postcode) => {
@@ -39,12 +39,12 @@ const handler = async (req, res) => {
       return;
 
     case '/':
-    case '/__postcode-api':
-      res.writeHead(302, { Location: '/__postcode-api/v1' });
+    case '/__graphics/postcode-api':
+      res.writeHead(302, { Location: '/__graphics/postcode-api/v1' });
       res.end();
       return;
 
-    case '/__postcode-api/v1':
+    case '/__graphics/postcode-api/v1':
       res.end(docPageHTML);
       return;
 
