@@ -15,9 +15,9 @@ const areaTypes = fs.readdirSync(path.resolve(__dirname, '..', 'data'))
 // rough and ready docs page
 const docPageHTML = fs.readFileSync(path.join(__dirname, 'docs.html'), 'utf8')
   .replace('$AREA_TYPES', areaTypes.join(', '))
-  .replace('$EXAMPLES', areaTypes.map(name => {
+  .replace('$EXAMPLES', areaTypes.map((name) => {
     const pathname = `/__graphics/postcode-api/v1/${name}?postcode=se1+9hl`;
-    return `<li><a href="${pathname}"><code>${pathname}</code></a></li>`
+    return `<li><a href="${pathname}"><code>${pathname}</code></a></li>`;
   }).join(''));
 
 // regex for matching API requests

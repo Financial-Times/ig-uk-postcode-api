@@ -7,7 +7,7 @@ const cache = lruCache(1500000);
 
 const notFoundCache = lruCache({
   max: 10000,
-  maxAge: 60
+  maxAge: 60,
 });
 
 const dataDir = path.resolve(__dirname, '..', 'data');
@@ -33,13 +33,20 @@ const lookup = async (areaType, outcode, incode) => {
         }
       });
 
+    let found = false;
     stream.pipe(csv())
       .on('data', (data) => {
-        cache.set(cacheKey, data.value);
-        if (incode === data.incode) resolve(data.value);
+        cache.set(`${areaType} ${outcode} ${data.incode}`, data.value);
+        if (incode === data.incode) {
+          found = true;
+          resolve(data.value);
+        }
       })
       .on('error', reject)
       .on('end', () => {
+        if (!found) {
+          notFoundCache.set(cacheKey, true);
+        }
         resolve(null);
       })
     ;
