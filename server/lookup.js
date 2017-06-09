@@ -3,7 +3,7 @@ const fs = require('graceful-fs');
 const csv = require('csv-parser');
 const lruCache = require('lru-cache');
 
-const cache = lruCache(1500000);
+const cache = lruCache(10000);
 
 const notFoundCache = lruCache({
   max: 10000,
