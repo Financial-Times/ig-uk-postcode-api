@@ -14,7 +14,7 @@
     "eslint-plugin-react": "^7.0.1"
   },
   "engines": {
-    "node": ">=7.10",
+    "node": ">=8.1.4",
     "yarn": ">=0.24.5"
   },
   "private": true,
